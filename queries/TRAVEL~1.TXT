@@ -1,0 +1,28 @@
+WITH RAWDATA(INC_CD, TT) AS (
+SELECT	P.INCIDENT_CD AS INC_NO,
+	TIMESTAMPDIFF (2, CAST((TIMESTAMP(DPTSCN_DATE, DPTSCN_TIME)) - 
+		       TIMESTAMP(ARVDST_DATE, ARVDST_TIME) AS CHAR(22))) AS TRAVTIME
+FROM	FACCSDB.INCIDENTS1 I, FACCSDB.INCIDENT_UNITS1 U, FACCSDB.PATIENTS1 P, FACCSDB.DIAGCODES D
+WHERE	P.DIAG_CD IN D.DIAG_CD	AND
+	P.INCIDENT_CD = I.INCIDENT_CD	AND
+	U.INCIDENT_CD = I.INCIDENT_CD	AND
+	U.DISP_DATE BETWEEN DATE('01/31/1999') AND DATE('03/01/1999')),
+
+TOTALS (TOT) AS(
+SELECT COUNT(*) FROM RAWDATA),
+
+med (med) as (
+select 	TT
+from RAWDATA A, TOTALS
+group by TT, TOT
+Having 	(select count(*) from RAWDATA AA where AA.TT < A.TT)
+	between 
+	(TOT/2) and ((TOT/2)+20))
+
+select 'IlsTime',
+time('00:00:00') + (select 	min(med) from med) seconds as Median,
+time('00:00:00') + min(TT) seconds as Min, 
+	time('00:00:00') + max(TT) seconds as Max,
+	time('00:00:00') + avg(TT) seconds as Avg,
+	(select count(*) FROM RAWDATA where TT is not null) as Count
+from RAWDATA

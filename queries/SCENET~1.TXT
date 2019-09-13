@@ -1,0 +1,43 @@
+with totals (itot, atot, ttot) as (
+select
+count( distinct concat(cast(incident_cd as char(10)), cast(ils_scn as char(5)))),
+count( distinct concat(cast(incident_cd as char(10)), cast(als_scn as char(5)))),
+count( distinct incident_cd)
+from faccsdb.scntmtmp
+),
+
+imed (imed) as (
+select 	ils_scn 
+from faccsdb.scntmtmp a, totals
+group by ils_scn, itot
+having 	(select count(*) from faccsdb.scntmtmp aa where aa.ils_scn < a.ils_scn)
+	between 
+	(itot/2) and ((itot/2)+20)),
+
+amed (amed) as (
+select 	als_scn
+from faccsdb.scntmtmp a, totals
+group by als_scn, atot
+having 	(select count(*) from faccsdb.scntmtmp aa where aa.als_scn < a.als_scn)
+	between 
+	(atot/2) and ((atot/2)+20))
+
+select 'IlsTime' as type,
+time('00:00:00') + (select 	min(imed) from imed) seconds as Median,
+time('00:00:00') + min(ils_scn) seconds as min, 
+time('00:00:00') + max(ils_scn) seconds as max,
+time('00:00:00') + avg(ils_scn) seconds as avg,
+itot as totals,
+cast( (cast(itot as float) / cast(ttot as float)) as dec(5,4))* 100 as percentage
+from faccsdb.scntmtmp aaa, totals
+group by itot, ttot
+union all
+select 'AlsTime' as type,
+time('00:00:00') + (select 	min(amed) from amed) seconds as Median,
+time('00:00:00') + min(als_scn) seconds as min, 
+time('00:00:00') + max(als_scn) seconds as max,
+time('00:00:00') + avg(als_scn) seconds as avg,
+atot as totals,
+cast( (cast(atot as float) / cast(ttot as float)) as dec(5,4))* 100 as percentage
+from faccsdb.scntmtmp aaa, totals
+group by atot, ttot

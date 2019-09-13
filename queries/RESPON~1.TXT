@@ -1,0 +1,59 @@
+with totals (itot, atot, ftot, tot) as (
+select
+count( distinct concat(cast(incident_cd as char(10)), cast(ilstime as char(5)))),
+count( distinct concat(cast(incident_cd as char(10)), cast(alstime as char(5)))),
+count(distinct concat(cast(incident_cd as char(10)), cast(frtime as char(5)))),
+count(*)
+from faccsdb.arrvtemp
+),
+
+imed (imed) as (
+select 	ilstime
+from faccsdb.arrvtemp a, totals
+group by ilstime, itot
+having 	(select count(*) from faccsdb.arrvtemp aa where aa.ilstime < a.ilstime)
+	between 
+	(itot/2) and ((itot/2)+20)),
+
+amed (amed) as (
+select 	alstime
+from faccsdb.arrvtemp a, totals
+group by alstime, atot
+having 	(select count(*) from faccsdb.arrvtemp aa where aa.alstime < a.alstime)
+	between 
+	(atot/2) and ((atot/2)+20)),
+
+fmed (fmed) as (
+select 	frtime
+from faccsdb.arrvtemp a, totals
+group by frtime, ftot
+having 	(select count(*) from faccsdb.arrvtemp aa where aa.frtime < a.frtime)
+	between 
+	(ftot/2) and ((ftot/2)+20))
+
+select 'IlsTime',
+time('00:00:00') + (select 	min(imed) from imed) seconds as Median,
+time('00:00:00') + min(ilstime) seconds as ilsmin, 
+	time('00:00:00') + max(ilstime) seconds as ilsmax,
+	time('00:00:00') + avg(ilstime) seconds as ilsavg,
+	(select itot from totals),
+	(select cast((cast(itot as float) / cast(tot as float)) as dec(5,4)) from totals) * 100
+from faccsdb.arrvtemp aaa
+union all
+select 'AlsTime',
+time('00:00:00') + (select 	min(amed) from amed) seconds as Median,
+time('00:00:00') + min(alstime) seconds as alsmin, 
+	time('00:00:00') + max(alstime) seconds as alsmax,
+	time('00:00:00') + avg(alstime) seconds as alsavg,
+	(select atot from totals),
+	(select cast((cast(atot as float) / cast(tot as float)) as dec(5,4)) from totals) * 100
+from faccsdb.arrvtemp aaa
+union all
+select 'FrTime',
+time('00:00:00') + (select 	min(fmed) from fmed) seconds as Median,
+time('00:00:00') + min(frtime) seconds as frmin, 
+	time('00:00:00') + max(frtime) seconds as frmax,
+	time('00:00:00') + avg(frtime) seconds as fravg,
+	(select ftot from totals),
+	(select cast((cast(ftot as float) / cast(tot as float)) as dec(5,4)) from totals) * 100
+from faccsdb.arrvtemp aaa

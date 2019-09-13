@@ -1,0 +1,11 @@
+WITH
+minutes (min_col) as
+(
+select min_col from faccsdb.minutes
+)
+
+select 	min_col,
+	cast(cast((select count(*) from faccsdb.incthdta where cast(time as float) < 60* min_col) as float) / (cast((select count(*) from faccsdb.incthdta where time is not null) as float)) as dec(5,4))*100 as Travel_Time,
+	(SELECT COUNT(*) FROM faccsdb.incthdta)
+from	faccsdb.incthdta, minutes
+group by 	min_col

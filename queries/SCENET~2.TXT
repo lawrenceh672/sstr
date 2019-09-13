@@ -1,0 +1,21 @@
+with
+
+minutes (min_col) as
+(
+select min_col from faccsdb.minutes
+),
+
+totals (itot, atot) as (
+select
+count( distinct concat(cast(incident_cd as char(10)), cast(ils_scn as char(5)))),
+count( distinct concat(cast(incident_cd as char(10)), cast(als_scn as char(5)))) + 1
+from faccsdb.scntmtmp
+)
+
+select
+min_col,
+cast( cast((select count(distinct concat(cast(incident_cd as char(10)), cast(ils_scn as char(5)))) from faccsdb.scntmtmp where cast(ils_scn as float) < 60* min_col) as float) / (cast(itot as float)) as dec(5,4)) * 100 as Ils_Time,
+cast( cast((select count(distinct concat(cast(incident_cd as char(10)), cast(als_scn as char(5)))) from faccsdb.scntmtmp where cast(als_scn as float) < 60* min_col) as float) / (cast(atot as float)) as dec(5,4)) * 100 as Als_Time
+
+from totals, faccsdb.scntmtmp, minutes
+group by min_col, itot, atot

@@ -1,0 +1,19 @@
+with totals(tot) as (
+select count(*) from faccsdb.trptdata
+),
+
+med (med) as (
+select 	transtime
+from faccsdb.trptdata t, TOTALS
+group by transtime, TOT
+Having 	(select count(*) from faccsdb.trptdata tt where tt.transtime < t.transtime)
+	between 
+	(TOT/2) and ((TOT/2)+20))
+
+select 'All' as Type,
+time('00:00:00') + (select 	min(med) from med) seconds as Median,
+time('00:00:00') + min(transtime) seconds as Min, 
+	time('00:00:00') + max(transtime) seconds as Max,
+	time('00:00:00') + avg(transtime) seconds as Avg,
+	(select count(*) FROM faccsdb.trptdata where transtime is not null) as Count
+from faccsdb.trptdata

@@ -1,0 +1,19 @@
+WITH
+TOTALS (TOT) AS(
+SELECT COUNT(*) FROM faccsdb.outcthdt),
+
+med (med) as (
+select 	time
+from faccsdb.outcthdt A, TOTALS
+group by time, TOT
+Having 	(select count(*) from faccsdb.outcthdt AA where AA.time < A.time)
+	between 
+	(TOT/2) and ((TOT/2)+20))
+
+select 'IlsTime',
+time('00:00:00') + (select 	min(med) from med) seconds as Median,
+time('00:00:00') + min(time) seconds as Min, 
+	time('00:00:00') + max(time) seconds as Max,
+	time('00:00:00') + avg(time) seconds as Avg,
+	(select count(*) FROM faccsdb.outcthdt where time is not null) as Count
+from faccsdb.outcthdt

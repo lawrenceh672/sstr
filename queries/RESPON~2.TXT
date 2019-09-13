@@ -1,0 +1,39 @@
+select 	i.incident_cd,
+
+	timestampdiff(2, cast((select min(timestamp(u.arvscn_date,u.arvscn_time))
+		from faccsdb.incident_units_al1 u where u.incident_cd =
+		i.incident_cd and u.arvscn_time is not null and u.type_cd = 'BLS') -
+	coalesce(timestamp(i.e911_gim_date, i.e911_gim_time), 
+	timestamp(c.cmt_date,c.cmt_time)) as char(22))) as ilstime,
+
+	(select min(timestampdiff(2, cast(timestamp(f.inc_disp_date, f.inc_disp_time) +
+		((r.arv_time) seconds) -
+	coalesce(timestamp(i.e911_gim_date, i.e911_gim_time),
+	timestamp(c.cmt_date,c.cmt_time)) as char(22)))) as frtime
+
+	from faccsdb.incident_xfer1 x, faccsdb.incidents f,faccsdb.dispatch r
+
+	where f.inc_nbr = (cast(x.xfer_cd as integer) + ((x.incident_cd /1000000)*(1000000))) and
+r.inc_nbr = (cast(x.xfer_cd as integer) + ((x.incident_cd /1000000)*(1000000))) and
+x.incident_cd = i.incident_cd and x.xfer_agency = 'WFD' and x.xfer_cd <> 'NONE' 
+),
+
+	timestampdiff
+	(2, cast(
+		(select min(timestamp(u.arvscn_date,u.arvscn_time))
+			from 
+			faccsdb.incident_units_al1 u 
+			where 
+			u.incident_cd =	i.incident_cd and 
+			u.arvscn_time is not null and 
+			u.type_cd = 'ALS') -
+		coalesce(timestamp(i.e911_gim_date, i.e911_gim_time), 
+			 timestamp(c.cmt_date,c.cmt_time)) as char(22)))
+	as alstime
+from 
+faccsdb.incidents1 i, faccsdb.incident_comments1 c,
+faccsdb.diagcodes d, faccsdb.patients1 p
+where
+i.incident_cd = c.incident_cd and c.seqno = 1 and 
+p.incident_cd = i.incident_cd and p.diag_cd in d.diag_cd and
+i.create_date between date('01/31/1999') and date('03/05/1999')

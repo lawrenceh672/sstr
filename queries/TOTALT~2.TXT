@@ -1,0 +1,4 @@
+select 	min_col,
+	cast((select count(*) from faccsdb.totemstp where cast(time as float) < 60* min_col) as float) / (cast((select count(*) from faccsdb.totemstp where time is not null) as float)) as Travel_Time
+from	faccsdb.totemstp t, faccsdb.minutes m
+group by 	min_col
